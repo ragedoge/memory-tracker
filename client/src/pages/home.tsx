@@ -1,0 +1,354 @@
+import { useState, useMemo } from "react";
+import { usePrices, useExchangeRates, useProducts } from "@/hooks/use-ram-data";
+import {
+  CATEGORIES, TYPES_BY_CATEGORY, TIME_RANGES, CURRENCIES, TYPE_COLORS,
+  CAPACITY_OPTIONS, formatCapacity,
+  type Category, type PriceMode,
+} from "@/lib/constants";
+import { PriceChart } from "@/components/price-chart";
+import { StatsCards } from "@/components/stats-cards";
+import { ProductPanel } from "@/components/product-panel";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp, TrendingDown, MemoryStick, HardDrive, Moon, Sun } from "lucide-react";
+import { format, subDays } from "date-fns";
+
+export default function Home() {
+  const [category, setCategory] = useState<Category>("RAM");
+  const [selectedType, setSelectedType] = useState("DDR5");
+  const [selectedRange, setSelectedRange] = useState("1Y");
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+  const [priceMode, setPriceMode] = useState<PriceMode>("per_gb");
+  const [selectedCapacity, setSelectedCapacity] = useState<number | null>(null);
+  const [showProducts, setShowProducts] = useState(false);
+  const [isDark, setIsDark] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : true
+  );
+
+  // Dark mode
+  const toggleDark = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      document.documentElement.classList.toggle("dark", next);
+      return next;
+    });
+  };
+  useMemo(() => { document.documentElement.classList.toggle("dark", isDark); }, []);
+
+  // When category changes, reset type
+  const types = TYPES_BY_CATEGORY[category];
+  const handleCategoryChange = (cat: Category) => {
+    setCategory(cat);
+    setSelectedType(TYPES_BY_CATEGORY[cat][0]);
+    setPriceMode("per_gb");
+    setSelectedCapacity(null);
+    setShowProducts(false);
+  };
+
+  // When type changes, reset capacity
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type);
+    setSelectedCapacity(null);
+    setShowProducts(false);
+  };
+
+  // Capacity options for current selection
+  const capacityOpts = CAPACITY_OPTIONS[category]?.[selectedType] || [];
+
+  // When switching to capacity mode, select first capacity
+  const handlePriceModeChange = (mode: PriceMode) => {
+    setPriceMode(mode);
+    if (mode === "capacity" && !selectedCapacity && capacityOpts.length > 0) {
+      setSelectedCapacity(capacityOpts[0]);
+    }
+  };
+
+  // Date range
+  const today = "2026-03-31";
+  const rangeConfig = TIME_RANGES.find((r) => r.label === selectedRange);
+  const startDate = rangeConfig && rangeConfig.days > 0
+    ? format(subDays(new Date(today), rangeConfig.days), "yyyy-MM-dd")
+    : undefined;
+
+  const { data: prices, isLoading } = usePrices(category, selectedType, startDate, today);
+  const { data: exchangeRates } = useExchangeRates();
+  const { data: productList } = useProducts(
+    category, selectedType,
+    priceMode === "capacity" && selectedCapacity ? selectedCapacity : undefined
+  );
+
+  const currencyInfo = CURRENCIES[selectedCurrency];
+  const rate = exchangeRates?.[selectedCurrency] || 1;
+
+  // Convert prices
+  const convertedPrices = useMemo(() => {
+    if (!prices) return [];
+    const multiplier = priceMode === "capacity" && selectedCapacity
+      ? rate * selectedCapacity
+      : rate;
+    return prices.map((p) => ({
+      ...p,
+      price: Math.round(p.priceUsd * multiplier * 100) / 100,
+    }));
+  }, [prices, rate, priceMode, selectedCapacity]);
+
+  // Stats
+  const latestPrice = convertedPrices.length > 0 ? convertedPrices[convertedPrices.length - 1].price : 0;
+  const firstPrice = convertedPrices.length > 0 ? convertedPrices[0].price : 0;
+  const priceChange = latestPrice - firstPrice;
+  const percentChange = firstPrice > 0 ? (priceChange / firstPrice) * 100 : 0;
+  const isPositive = priceChange >= 0;
+  const highPrice = convertedPrices.length > 0 ? Math.max(...convertedPrices.map((p) => p.price)) : 0;
+  const lowPrice = convertedPrices.length > 0 ? Math.min(...convertedPrices.map((p) => p.price)) : 0;
+
+  // Format price
+  const formatPrice = (value: number) => {
+    if (selectedCurrency === "KRW") return `₩${Math.round(value).toLocaleString()}`;
+    if (selectedCurrency === "JPY") return `¥${Math.round(value).toLocaleString()}`;
+    if (value >= 1000) return `${currencyInfo.symbol}${Math.round(value).toLocaleString()}`;
+    if (value >= 100) return `${currencyInfo.symbol}${value.toFixed(0)}`;
+    if (value >= 1) return `${currencyInfo.symbol}${value.toFixed(2)}`;
+    return `${currencyInfo.symbol}${value.toFixed(3)}`;
+  };
+
+  const unitLabel = priceMode === "capacity" && selectedCapacity
+    ? `/ ${formatCapacity(selectedCapacity)}`
+    : "/GB";
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-md">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              {category === "RAM" ? <MemoryStick className="w-4 h-4 text-primary" /> : <HardDrive className="w-4 h-4 text-primary" />}
+            </div>
+            <span className="font-semibold text-sm tracking-tight" data-testid="logo-text">
+              Memory Tracker
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="h-8 px-2 pr-7 text-xs bg-secondary border border-border rounded-md text-foreground appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 6px center",
+              }}
+              data-testid="currency-selector"
+            >
+              {Object.entries(CURRENCIES).map(([code, info]) => (
+                <option key={code} value={code}>{info.symbol} {code}</option>
+              ))}
+            </select>
+            <button onClick={toggleDark}
+              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-secondary transition-colors"
+              data-testid="theme-toggle" aria-label="Toggle theme"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 py-6">
+        {/* Category tabs (RAM / SSD) */}
+        <div className="flex items-center gap-2 mb-4" data-testid="category-tabs">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => handleCategoryChange(cat)}
+              className={`px-4 py-1.5 text-sm font-semibold rounded-lg border transition-all ${
+                category === cat
+                  ? "bg-foreground text-background border-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+              }`}
+              data-testid={`cat-${cat}`}
+            >
+              {cat === "RAM" ? <span className="inline-flex items-center gap-1.5"><MemoryStick className="w-3.5 h-3.5" /> RAM</span>
+                : <span className="inline-flex items-center gap-1.5"><HardDrive className="w-3.5 h-3.5" /> SSD</span>}
+            </button>
+          ))}
+        </div>
+
+        {/* Type tabs + price mode + capacity selector */}
+        <div className="flex items-end justify-between mb-4 flex-wrap gap-3">
+          <div className="flex flex-col gap-3">
+            {/* Type tabs */}
+            <div className="flex gap-1" data-testid="type-tabs">
+              {types.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => handleTypeChange(type)}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${
+                    selectedType === type
+                      ? "text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                  style={selectedType === type ? { backgroundColor: TYPE_COLORS[type] } : undefined}
+                  data-testid={`tab-${type}`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+
+            {/* Price mode + capacity */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex gap-0.5 bg-secondary/50 p-0.5 rounded-lg" data-testid="price-mode">
+                <button
+                  onClick={() => handlePriceModeChange("per_gb")}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    priceMode === "per_gb"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid="mode-per-gb"
+                >
+                  Per GB
+                </button>
+                <button
+                  onClick={() => handlePriceModeChange("capacity")}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                    priceMode === "capacity"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  data-testid="mode-capacity"
+                >
+                  By Capacity
+                </button>
+              </div>
+
+              {priceMode === "capacity" && (
+                <div className="flex gap-1" data-testid="capacity-selector">
+                  {capacityOpts.map((cap) => (
+                    <button
+                      key={cap}
+                      onClick={() => { setSelectedCapacity(cap); setShowProducts(false); }}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all ${
+                        selectedCapacity === cap
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
+                      }`}
+                      data-testid={`cap-${cap}`}
+                    >
+                      {formatCapacity(cap)}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Buy button */}
+              {priceMode === "capacity" && selectedCapacity && (
+                <button
+                  onClick={() => setShowProducts(!showProducts)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md border transition-all ${
+                    showProducts
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-primary/50 text-primary hover:bg-primary/10"
+                  }`}
+                  data-testid="toggle-products"
+                >
+                  {showProducts ? "Hide Products" : "🛒 Buy Now"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Time range selector */}
+          <div className="flex gap-0.5 bg-secondary/50 p-0.5 rounded-lg" data-testid="range-tabs">
+            {TIME_RANGES.map((range) => (
+              <button
+                key={range.label}
+                onClick={() => setSelectedRange(range.label)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  selectedRange === range.label
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid={`range-${range.label}`}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Price headline */}
+        <div className="mb-4">
+          {isLoading ? (
+            <Skeleton className="h-10 w-60" />
+          ) : (
+            <div className="flex items-baseline gap-3 flex-wrap">
+              <span className="text-3xl font-bold tracking-tight tabular-nums" data-testid="current-price">
+                {formatPrice(latestPrice)}
+              </span>
+              <span className="text-xs text-muted-foreground">{unitLabel}</span>
+              <span
+                className={`inline-flex items-center gap-1 text-sm font-medium tabular-nums ${
+                  isPositive ? "text-red-500" : "text-emerald-500"
+                }`}
+                data-testid="price-change"
+              >
+                {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                {isPositive ? "+" : ""}{formatPrice(Math.abs(priceChange))} ({isPositive ? "+" : ""}{percentChange.toFixed(2)}%)
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Product panel */}
+        {showProducts && priceMode === "capacity" && selectedCapacity && productList && productList.length > 0 && (
+          <ProductPanel
+            products={productList}
+            currency={selectedCurrency}
+            rate={rate}
+            formatPrice={formatPrice}
+          />
+        )}
+
+        {/* Chart */}
+        <div className="bg-card border border-border rounded-xl p-4 sm:p-6 mb-6" data-testid="chart-container">
+          {isLoading ? (
+            <Skeleton className="h-[400px] w-full" />
+          ) : (
+            <PriceChart
+              data={convertedPrices}
+              typeKey={selectedType}
+              currency={selectedCurrency}
+              currencySymbol={currencyInfo.symbol}
+              formatPrice={formatPrice}
+            />
+          )}
+        </div>
+
+        {/* Stats */}
+        <StatsCards
+          high={highPrice}
+          low={lowPrice}
+          latest={latestPrice}
+          change={priceChange}
+          percentChange={percentChange}
+          formatPrice={formatPrice}
+          isLoading={isLoading}
+          selectedRange={selectedRange}
+          dataCount={convertedPrices.length}
+        />
+      </main>
+
+      <footer className="border-t border-border mt-8">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4">
+          <p className="text-xs text-muted-foreground text-center">
+            Data sourced from TrendForce, DRAMeXchange, Tom's Hardware, PCPartPicker, and industry reports.
+            Prices are approximate spot market values (USD base). Exchange rates are approximate. Product links may be affiliate links.
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
