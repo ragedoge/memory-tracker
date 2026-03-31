@@ -9,7 +9,7 @@ import { PriceChart } from "@/components/price-chart";
 import { StatsCards } from "@/components/stats-cards";
 import { ProductPanel } from "@/components/product-panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, MemoryStick, HardDrive, Moon, Sun, Mail, Heart } from "lucide-react";
+import { TrendingUp, TrendingDown, MemoryStick, HardDrive, Moon, Sun, Mail, Heart, Copy, Check, X } from "lucide-react";
 import { SiInstagram, SiGithub } from "react-icons/si";
 import { format, subDays } from "date-fns";
 
@@ -21,6 +21,8 @@ export default function Home() {
   const [priceMode, setPriceMode] = useState<PriceMode>("per_gb");
   const [selectedCapacity, setSelectedCapacity] = useState<number | null>(null);
   const [showProducts, setShowProducts] = useState(false);
+  const [showEmailPopup, setShowEmailPopup] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const [isDark, setIsDark] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -123,9 +125,7 @@ export default function Home() {
       <header className="border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-md">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              {category === "RAM" ? <MemoryStick className="w-4 h-4 text-primary" /> : <HardDrive className="w-4 h-4 text-primary" />}
-            </div>
+            <img src="/logo-sm.png" alt="Memory Tracker" className="w-8 h-8 rounded-lg" />
             <span className="font-semibold text-sm tracking-tight" data-testid="logo-text">
               Memory Tracker
             </span>
@@ -348,9 +348,7 @@ export default function Home() {
             {/* Left - Site info */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                  <MemoryStick className="w-3 h-3 text-primary" />
-                </div>
+                <img src="/logo-sm.png" alt="Memory Tracker" className="w-6 h-6 rounded-md" />
                 <span className="font-semibold text-sm">Memory Tracker</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -360,7 +358,7 @@ export default function Home() {
 
             {/* Center - Profile */}
             <div className="space-y-3 md:text-center">
-              <p className="text-sm font-medium">박준형 (Jun Park)</p>
+              <p className="text-sm font-medium">Jun Hyeong Park</p>
               <div className="flex items-center gap-3 md:justify-center">
                 <a
                   href="https://www.instagram.com/areciv_archiv/"
@@ -382,14 +380,14 @@ export default function Home() {
                 >
                   <SiGithub className="w-3.5 h-3.5" />
                 </a>
-                <a
-                  href="mailto:cjun0416@gmail.com"
+                <button
+                  onClick={() => { setShowEmailPopup(true); setEmailCopied(false); }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all"
                   aria-label="Email"
                   data-testid="social-email"
                 >
                   <Mail className="w-3.5 h-3.5" />
-                </a>
+                </button>
                 <a
                   href="https://ko-fi.com/junhyeongpark"
                   target="_blank"
@@ -436,6 +434,59 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Email popup */}
+      {showEmailPopup && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowEmailPopup(false)}
+          data-testid="email-overlay"
+        >
+          <div
+            className="bg-card border border-border rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 relative"
+            onClick={(e) => e.stopPropagation()}
+            data-testid="email-popup"
+          >
+            <button
+              onClick={() => setShowEmailPopup(false)}
+              className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Contact Email</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 bg-secondary rounded-lg px-3 py-2">
+                  <span className="text-sm font-mono" data-testid="email-address">cjun0416@gmail.com</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText("cjun0416@gmail.com");
+                    setEmailCopied(true);
+                    setTimeout(() => setEmailCopied(false), 2000);
+                  }}
+                  className={`h-9 px-3 flex items-center gap-1.5 rounded-lg text-xs font-medium transition-all ${
+                    emailCopied
+                      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  }`}
+                  data-testid="copy-email-btn"
+                >
+                  {emailCopied ? (
+                    <><Check className="w-3.5 h-3.5" /> Copied!</>
+                  ) : (
+                    <><Copy className="w-3.5 h-3.5" /> Copy</>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
