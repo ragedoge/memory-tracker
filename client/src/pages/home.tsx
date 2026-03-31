@@ -363,7 +363,7 @@ export default function Home() {
               <p className="text-sm font-medium">박준형 (Jun Park)</p>
               <div className="flex items-center gap-3 md:justify-center">
                 <a
-                  href="https://www.instagram.com/"
+                  href="https://www.instagram.com/areciv_archiv/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all"
