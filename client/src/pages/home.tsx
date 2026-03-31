@@ -125,7 +125,7 @@ export default function Home() {
       <header className="border-b border-border sticky top-0 z-50 bg-background/80 backdrop-blur-md">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src="/logo-sm.png" alt="Memory Tracker" className="w-8 h-8 rounded-lg" />
+            <img src="/logo-sm.png" alt="Memory Tracker" className="w-8 h-8 object-contain" />
             <span className="font-semibold text-sm tracking-tight" data-testid="logo-text">
               Memory Tracker
             </span>
@@ -348,7 +348,7 @@ export default function Home() {
             {/* Left - Site info */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <img src="/logo-sm.png" alt="Memory Tracker" className="w-6 h-6 rounded-md" />
+                <img src="/logo-sm.png" alt="Memory Tracker" className="w-6 h-6 object-contain" />
                 <span className="font-semibold text-sm">Memory Tracker</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
