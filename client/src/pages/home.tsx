@@ -9,7 +9,8 @@ import { PriceChart } from "@/components/price-chart";
 import { StatsCards } from "@/components/stats-cards";
 import { ProductPanel } from "@/components/product-panel";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, MemoryStick, HardDrive, Moon, Sun } from "lucide-react";
+import { TrendingUp, TrendingDown, MemoryStick, HardDrive, Moon, Sun, Mail, Heart } from "lucide-react";
+import { SiInstagram, SiGithub } from "react-icons/si";
 import { format, subDays } from "date-fns";
 
 export default function Home() {
@@ -342,11 +343,97 @@ export default function Home() {
       </main>
 
       <footer className="border-t border-border mt-8">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-4">
-          <p className="text-xs text-muted-foreground text-center">
-            Data sourced from TrendForce, DRAMeXchange, Tom's Hardware, PCPartPicker, and industry reports.
-            Prices are approximate spot market values (USD base). Exchange rates are approximate. Product links may be affiliate links.
-          </p>
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+            {/* Left - Site info */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                  <MemoryStick className="w-3 h-3 text-primary" />
+                </div>
+                <span className="font-semibold text-sm">Memory Tracker</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Track RAM & SSD prices like stocks. Daily updated pricing data with historical trends, capacity-based views, and product recommendations.
+              </p>
+            </div>
+
+            {/* Center - Profile */}
+            <div className="space-y-3 md:text-center">
+              <p className="text-sm font-medium">박준형 (Jun Park)</p>
+              <div className="flex items-center gap-3 md:justify-center">
+                <a
+                  href="https://www.instagram.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all"
+                  aria-label="Instagram"
+                  data-testid="social-instagram"
+                >
+                  <SiInstagram className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="https://github.com/ragedoge"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all"
+                  aria-label="GitHub"
+                  data-testid="social-github"
+                >
+                  <SiGithub className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="mailto:cjun0416@gmail.com"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all"
+                  aria-label="Email"
+                  data-testid="social-email"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="https://ko-fi.com/junhyeongpark"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-pink-500/10 text-muted-foreground hover:text-pink-500 transition-all"
+                  aria-label="Support on Ko-fi"
+                  data-testid="social-kofi"
+                >
+                  <Heart className="w-3.5 h-3.5" />
+                </a>
+              </div>
+              <a
+                href="https://ko-fi.com/junhyeongpark"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-pink-500/30 text-pink-500 hover:bg-pink-500/10 transition-all"
+                data-testid="kofi-button"
+              >
+                <Heart className="w-3 h-3" /> Support this project
+              </a>
+            </div>
+
+            {/* Right - Links */}
+            <div className="space-y-2 md:text-right">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Legal</p>
+              <div className="flex gap-4 md:justify-end">
+                <span className="text-xs text-muted-foreground/60 cursor-default">Privacy Policy</span>
+                <span className="text-xs text-muted-foreground/60 cursor-default">Terms of Service</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
+              <p className="text-[10px] text-muted-foreground">
+                © 2026 Memory Tracker. All rights reserved.
+              </p>
+              <p className="text-[10px] text-muted-foreground text-center sm:text-right">
+                Data sourced from TrendForce, DRAMeXchange, Tom's Hardware, PCPartPicker, and industry reports.
+                Prices are approximate. Product links may be affiliate links.
+              </p>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
